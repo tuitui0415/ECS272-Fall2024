@@ -99,7 +99,6 @@ export default function SankeyDiagram() {
       .attr("opacity", 0.7)
       .attr("stroke-width", (d) => Math.max(1, d.width)); // Set to actual width at end of transition
       
-      
     // Render node labels with conditions for education level
     const textGroup = svg.append("g")
       .selectAll("text")
@@ -112,55 +111,31 @@ export default function SankeyDiagram() {
       .attr("text-anchor", (d) => (d.x0 < size.width / 2 ? "start" : "end"))
       .attr("fill", "black")
       .text((d) => {
-        if (["Low Education", "Medium Education", "High Education"].includes(d.name)) {
+        if (["Low Education (Fedu + Medu < 3)", "Medium Education (2 < Fedu + Medu < 6)", "High Education (Fedu + Medu > 5)"].includes(d.name)) {
           if (
-            (educationLevel === "low" && d.name === "Low Education") ||
-            (educationLevel === "medium" && d.name === "Medium Education") ||
-            (educationLevel === "high" && d.name === "High Education") ||
+            (educationLevel === "low" && d.name === "Low Education (Fedu + Medu < 3)") ||
+            (educationLevel === "medium" && d.name === "Medium Education (2 < Fedu + Medu < 6)") ||
+            (educationLevel === "high" && d.name === "High Education (Fedu + Medu > 5)") ||
             educationLevel === "all"
           ) {
             return d.name;
           }
-          return "";
+          return ""; // Return an empty string for non-matching conditions
         }
         return d.name;
       });
 
-    // Define an update function to apply transitions on data updates
-    function update(newData) {
-      const sankeyData = generateSankeyData(newData, educationLevel);
-      const { nodes, links } = sankeyGenerator({
-        nodes: sankeyData.nodes.map((d) => ({ ...d })),
-        links: sankeyData.links.map((d) => ({ ...d })),
-      });
-
-      // Transition nodes to new positions
-      nodeGroup.data(nodes)
-        .transition()
-        .duration(750)
-        .attr("x", (d) => d.x0)
-        .attr("y", (d) => d.y0)
-        .attr("height", (d) => d.y1 - d.y0)
-        .attr("width", (d) => d.x1 - d.x0);
-
-      // Transition links to new positions and widths
-      linkGroup.data(links)
-
-        .attr("d", sankeyLinkHorizontal())
-        .attr("stroke-width", (d) => Math.max(1, d.width));
-
-      // Update labels if needed
-      textGroup.data(nodes)
-        .transition()
-        .duration(750)
-        .attr("x", (d) => (d.x0 < size.width / 2 ? d.x1 + 6 : d.x0 - 6))
-        .attr("y", (d) => (d.y1 + d.y0) / 2);
-    }
-    
-    // Return the update function for external calls
-    return { update };
-}
-
+    // Use a Set to ensure each label is displayed only once
+    const displayedLabels = new Set();
+    textGroup.each(function(d) {
+      const label = d3.select(this);
+      if (displayedLabels.has(d.name)) {
+        label.remove(); // Remove label if already displayed
+      } else {
+        displayedLabels.add(d.name); // Mark label as displayed
+      }
+    });
+  }
 
   function generateSankeyData(data, educationLevel) {
     const nodes = [
@@ -210,7 +185,6 @@ export default function SankeyDiagram() {
         <button onClick={() => setEducationLevel("low")}>Low Education Background</button>
         <button onClick={() => setEducationLevel("medium")}>Medium Education Background</button>
         <button onClick={() => setEducationLevel("high")}>High Education Background</button>
-        
       </div>
       <svg id="sankey-svg" width="100%" height="500"></svg>
     </div>
